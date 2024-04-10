@@ -95,7 +95,13 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Live Activities (Flutter)'),
+        title: const Text(
+          'Live Activities (Flutter)',
+          style: TextStyle(
+            fontSize: 19,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.green,
       ),
       body: SizedBox.expand(
@@ -150,10 +156,12 @@ class _HomeState extends State<Home> {
                       matchName: 'World cup ⚽️',
                       teamAName: 'PSG',
                       teamAState: 'Home',
-                      teamALogo:
-                          LiveActivityImageFromAsset('assets/images/psg.png'),
+                      teamALogo: LiveActivityImageFromAsset(
+                        'assets/images/psg.png',
+                      ),
                       teamBLogo: LiveActivityImageFromAsset(
-                          'assets/images/chelsea.png'),
+                        'assets/images/chelsea.png',
+                      ),
                       teamBName: 'Chelsea',
                       teamBState: 'Guest',
                       matchStartDate: DateTime.now(),

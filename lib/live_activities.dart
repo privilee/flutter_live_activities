@@ -1,9 +1,9 @@
+import 'package:live_activities/live_activities_platform_interface.dart';
 import 'package:live_activities/models/activity_update.dart';
+import 'package:live_activities/models/alert_config.dart';
 import 'package:live_activities/models/live_activity_state.dart';
 import 'package:live_activities/models/url_scheme_data.dart';
 import 'package:live_activities/services/app_groups_image_service.dart';
-
-import 'live_activities_platform_interface.dart';
 
 class LiveActivities {
   final AppGroupsImageService _appGroupsImageService = AppGroupsImageService();
@@ -11,9 +11,13 @@ class LiveActivities {
   /// This is required to initialize the plugin.
   /// Create an App Group inside "Runner" target & "Extension" in Xcode.
   /// Be sure to set the *SAME* App Group in both targets.
-  Future init({required String appGroupId}) {
+  /// [urlScheme] is optional and is the scheme sub-component of the URL.
+  Future init({required String appGroupId, String? urlScheme}) {
     _appGroupsImageService.appGroupId = appGroupId;
-    return LiveActivitiesPlatform.instance.init(appGroupId);
+    return LiveActivitiesPlatform.instance.init(
+      appGroupId,
+      urlScheme: urlScheme,
+    );
   }
 
   /// Create an iOS 16.1+ live activity.
@@ -41,9 +45,11 @@ class LiveActivities {
   /// You can get an activity id by calling [createActivity].
   /// Data is a map of key/value pairs that will be transmitted to your iOS extension widget.
   /// Map is limited to String keys and values for now.
-  Future updateActivity(String activityId, Map<String, dynamic> data) async {
+  Future updateActivity(String activityId, Map<String, dynamic> data,
+      [AlertConfig? alertConfig]) async {
     await _appGroupsImageService.sendImageToAppGroups(data);
-    return LiveActivitiesPlatform.instance.updateActivity(activityId, data);
+    return LiveActivitiesPlatform.instance
+        .updateActivity(activityId, data, alertConfig);
   }
 
   /// End an iOS 16.1+ live activity.
@@ -53,7 +59,8 @@ class LiveActivities {
   }
 
   /// Get the activity state.
-  Future<LiveActivityState> getActivityState(String activityId) {
+  /// If the activity is not found, `null` is returned.
+  Future<LiveActivityState?> getActivityState(String activityId) {
     return LiveActivitiesPlatform.instance.getActivityState(activityId);
   }
 
@@ -72,6 +79,11 @@ class LiveActivities {
   /// End all iOS 16.1+ live activities.
   Future endAllActivities() {
     return LiveActivitiesPlatform.instance.endAllActivities();
+  }
+
+  /// Get all iOS 16.1+ live activities and their state.
+  Future<Map<String, LiveActivityState>> getAllActivities() {
+    return LiveActivitiesPlatform.instance.getAllActivities();
   }
 
   /// Check if iOS 16.1+ live activities are enabled.

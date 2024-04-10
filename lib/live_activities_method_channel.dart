@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:live_activities/live_activities_platform_interface.dart';
 import 'package:live_activities/models/activity_update.dart';
+import 'package:live_activities/models/alert_config.dart';
 import 'package:live_activities/models/live_activity_state.dart';
 import 'package:live_activities/models/url_scheme_data.dart';
-
-import 'live_activities_platform_interface.dart';
 
 /// An implementation of [LiveActivitiesPlatform] that uses method channels.
 class MethodChannelLiveActivities extends LiveActivitiesPlatform {
@@ -24,9 +24,10 @@ class MethodChannelLiveActivities extends LiveActivitiesPlatform {
       const EventChannel('live_activities/url_scheme');
 
   @override
-  Future init(String appGroupId) async {
+  Future init(String appGroupId, {String? urlScheme}) async {
     await methodChannel.invokeMethod('init', {
       'appGroupId': appGroupId,
+      'urlScheme': urlScheme,
     });
   }
 
@@ -47,10 +48,12 @@ class MethodChannelLiveActivities extends LiveActivitiesPlatform {
   }
 
   @override
-  Future updateActivity(String activityId, Map<String, dynamic> data) async {
+  Future updateActivity(String activityId, Map<String, dynamic> data,
+      [AlertConfig? alertConfig]) async {
     return methodChannel.invokeMethod('updateActivity', {
       'activityId': activityId,
       'data': data,
+      'alertConfig': alertConfig?.toMap()
     });
   }
 
@@ -74,6 +77,14 @@ class MethodChannelLiveActivities extends LiveActivitiesPlatform {
   }
 
   @override
+  Future<Map<String, LiveActivityState>> getAllActivities() async {
+    final result =
+        await methodChannel.invokeMapMethod<String, String>('getAllActivities');
+
+    return result?.map((key, value) => MapEntry(key, LiveActivityState.values.byName(value))) ?? <String, LiveActivityState>{};
+  }
+
+  @override
   Future<bool> areActivitiesEnabled() async {
     final result =
         await methodChannel.invokeMethod<bool>('areActivitiesEnabled');
@@ -89,14 +100,14 @@ class MethodChannelLiveActivities extends LiveActivitiesPlatform {
   }
 
   @override
-  Future<LiveActivityState> getActivityState(String activityId) async {
-    final result = await methodChannel.invokeMethod<String>(
+  Future<LiveActivityState?> getActivityState(String activityId) async {
+    final result = await methodChannel.invokeMethod<String?>(
       'getActivityState',
       {
         'activityId': activityId,
       },
     );
-    return LiveActivityState.values.byName(result ?? 'unknown');
+    return result != null ? LiveActivityState.values.byName(result) : null;
   }
 
   @override

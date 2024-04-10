@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:app_group_directory/app_group_directory.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:live_activities/models/live_activity_image.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -35,63 +37,45 @@ class AppGroupsImageService {
         late File file;
         late String fileName;
         if (value is LiveActivityImageFromAsset) {
-          final assetImagePath = value;
-          final byteData = await rootBundle.load(assetImagePath.path);
-          fileName = (assetImagePath.path.split('/').last);
-
-          file = File('${tempDir.path}/$fileName');
-          await file.writeAsBytes(byteData.buffer
-              .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes));
-
-          final finalDestination = '${appGroupPicture.path}/$fileName';
-          file.copySync(finalDestination);
-
-          data[key] = finalDestination;
-          _assetsCopiedInAppGroups.add(finalDestination);
-
-          // remove file from temp directory
-          file.deleteSync();
+          fileName = (value.path.split('/').last);
         } else if (value is LiveActivityImageFromUrl) {
-          final urlImagePath = value;
-
-          Directory tempDir = await getTemporaryDirectory();
-          Uint8List? bytes;
-          var fileName = (urlImagePath.url.split('/').last).split('?').first;
-          var fileNameNew = 'copy${fileName.split('?').first}';
-          var fileFormat = fileName.split('.').last;
-          final ByteData imageData;
-          if (fileFormat != 'svg') {
-            imageData =
-                await NetworkAssetBundle(Uri.parse(urlImagePath.url)).load("");
-
-            bytes = imageData.buffer.asUint8List();
-          }
-
-          var file = await File('${tempDir.path}/$fileName').create();
-          var fileNew = await File('${tempDir.path}/$fileNameNew').create();
-          if (bytes != null) {
-            file.writeAsBytesSync(bytes);
-
-            var result = await FlutterImageCompress.compressAndGetFile(
-              file.path,
-              fileNew.path,
-              format: fileFormat == CompressFormat.png.name
-                  ? CompressFormat.png
-                  : CompressFormat.jpeg,
-              minHeight: urlImagePath.minHeight,
-              minWidth: urlImagePath.minWidth,
-            );
-
-            file = await File(result!.path).create();
-            final finalDestination = '${appGroupPicture.path}/$fileName';
-            file.copySync(finalDestination);
-
-            data[key] = finalDestination;
-            _assetsCopiedInAppGroups.add(finalDestination);
-
-            file.delete();
-          }
+          fileName = (value.url.split('/').last);
+        } else if (value is LiveActivityImageFromMemory) {
+          fileName = value.imageName;
         }
+
+        final bytes = await value.loadImage();
+        file = await File('${tempDir.path}/$fileName').create();
+        file.writeAsBytesSync(bytes);
+
+        if (value.resizeFactor != 1) {
+          final buffer = await ImmutableBuffer.fromUint8List(bytes);
+          final descriptor = await ImageDescriptor.encoded(buffer);
+          final imageWidth = descriptor.width;
+          final imageHeight = descriptor.height;
+
+          assert(
+            imageWidth > 0,
+            'Please make sure you are using an image that is not corrupt or too small',
+          );
+
+          final targetWidth = (imageWidth * value.resizeFactor).round();
+
+          file = await FlutterNativeImage.compressImage(
+            file.path,
+            targetWidth: targetWidth,
+            targetHeight: (imageHeight * targetWidth / imageWidth).round(),
+          );
+        }
+
+        final finalDestination = '${appGroupPicture.path}/$fileName';
+        file.copySync(finalDestination);
+
+        data[key] = finalDestination;
+        _assetsCopiedInAppGroups.add(finalDestination);
+
+        // remove file from temp directory
+        file.deleteSync();
       }
     }
   }

@@ -1,8 +1,14 @@
+import 'dart:typed_data';
+
+import 'package:flutter/services.dart';
+
 abstract class LiveActivityImage {
   int minHeight = 50;
   int minWidth = 90;
 
-  LiveActivityImage(this.minHeight, this.minWidth);
+  LiveActivityImage(this.minHeight, this.minWidth, this.resizeFactor);
+  
+  Future<Uint8List> loadImage();
 }
 
 /// Load an image from Flutter asset.
@@ -15,7 +21,10 @@ class LiveActivityImageFromAsset extends LiveActivityImage {
     this.path, {
     int minHeight = 50,
     int minWidth = 90,
-  }) : super(minHeight, minWidth);
+    {
+      num resizeFactor = 1,
+    }
+  }) : super(minHeight, minWidth, resizeFactor);
 }
 
 /// Load an image from an url.
@@ -28,5 +37,6 @@ class LiveActivityImageFromUrl extends LiveActivityImage {
     this.url, {
     int minHeight = 50,
     int minWidth = 90,
-  }) : super(minHeight, minWidth);
+    num resizeFactor = 1,
+  }) : super(minHeight, minWidth, resizeFactor);
 }
