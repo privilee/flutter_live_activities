@@ -1,25 +1,31 @@
+import 'package:live_activities/live_activities_platform_interface.dart';
 import 'package:live_activities/models/activity_update.dart';
+import 'package:live_activities/models/alert_config.dart';
 import 'package:live_activities/models/live_activity_state.dart';
 import 'package:live_activities/models/url_scheme_data.dart';
-import 'package:live_activities/services/app_groups_image_service.dart';
-
-import 'live_activities_platform_interface.dart';
+import 'package:live_activities/services/app_groups_file_service.dart';
 
 class LiveActivities {
-  final AppGroupsImageService _appGroupsImageService = AppGroupsImageService();
+  final AppGroupsFileService _appGroupsFileService = AppGroupsFileService();
 
   /// This is required to initialize the plugin.
   /// Create an App Group inside "Runner" target & "Extension" in Xcode.
   /// Be sure to set the *SAME* App Group in both targets.
-  Future init({required String appGroupId}) {
-    _appGroupsImageService.appGroupId = appGroupId;
-    return LiveActivitiesPlatform.instance.init(appGroupId);
+  /// [urlScheme] is optional and is the scheme sub-component of the URL.
+  /// [appGroupId] is the App Group identifier.
+  Future init({required String appGroupId, String? urlScheme}) {
+    _appGroupsFileService.init(appGroupId: appGroupId);
+    return LiveActivitiesPlatform.instance.init(
+      appGroupId,
+      urlScheme: urlScheme,
+    );
   }
 
   /// Create an iOS 16.1+ live activity.
   /// When the activity is created, an activity id is returned.
   /// Data is a map of key/value pairs that will be transmitted to your iOS extension widget.
-  /// Image are limited by size, be sure to pass only small images (you can use ```resizeFactor```).
+  /// Files like images are limited by size,
+  /// be sure to pass only small file size (you can use ```resizeFactor``` for images).
   ///
   /// [StaleIn] indicates if a StaleDate should be added to the activity. If the value is null or the Duration
   /// is less than 1 minute then no staleDate will be used. The parameter only affects the live activity on
@@ -29,7 +35,7 @@ class LiveActivities {
     bool removeWhenAppIsKilled = false,
     Duration? staleIn,
   }) async {
-    await _appGroupsImageService.sendImageToAppGroups(data);
+    await _appGroupsFileService.sendFilesToAppGroups(data);
     return LiveActivitiesPlatform.instance.createActivity(
       data,
       removeWhenAppIsKilled: removeWhenAppIsKilled,
@@ -41,9 +47,23 @@ class LiveActivities {
   /// You can get an activity id by calling [createActivity].
   /// Data is a map of key/value pairs that will be transmitted to your iOS extension widget.
   /// Map is limited to String keys and values for now.
-  Future updateActivity(String activityId, Map<String, dynamic> data) async {
-    await _appGroupsImageService.sendImageToAppGroups(data);
-    return LiveActivitiesPlatform.instance.updateActivity(activityId, data);
+  Future updateActivity(String activityId, Map<String, dynamic> data,
+      [AlertConfig? alertConfig]) async {
+    await _appGroupsFileService.sendFilesToAppGroups(data);
+    return LiveActivitiesPlatform.instance
+        .updateActivity(activityId, data, alertConfig);
+  }
+
+  Future createOrUpdateActivity(
+    String customId,
+    Map<String, dynamic> data, {
+    bool removeWhenAppIsKilled = false,
+    Duration? staleIn,
+  }) async {
+    await _appGroupsFileService.sendFilesToAppGroups(data);
+    return LiveActivitiesPlatform.instance.createOrUpdateActivity(
+        customId, data,
+        removeWhenAppIsKilled: removeWhenAppIsKilled, staleIn: staleIn);
   }
 
   /// End an iOS 16.1+ live activity.
@@ -53,7 +73,8 @@ class LiveActivities {
   }
 
   /// Get the activity state.
-  Future<LiveActivityState> getActivityState(String activityId) {
+  /// If the activity is not found, `null` is returned.
+  Future<LiveActivityState?> getActivityState(String activityId) {
     return LiveActivitiesPlatform.instance.getActivityState(activityId);
   }
 
@@ -74,9 +95,19 @@ class LiveActivities {
     return LiveActivitiesPlatform.instance.endAllActivities();
   }
 
+  /// Get all iOS 16.1+ live activities and their state.
+  Future<Map<String, LiveActivityState>> getAllActivities() {
+    return LiveActivitiesPlatform.instance.getAllActivities();
+  }
+
   /// Check if iOS 16.1+ live activities are enabled.
-  Future<bool> areActivitiesEnabled() async {
+  Future<bool> areActivitiesEnabled() {
     return LiveActivitiesPlatform.instance.areActivitiesEnabled();
+  }
+
+  /// Checks if iOS 17.2+ which allows push start for live activities.
+  Future<bool> allowsPushStart() {
+    return LiveActivitiesPlatform.instance.allowsPushStart();
   }
 
   /// Get a stream of url scheme data.
@@ -87,13 +118,13 @@ class LiveActivities {
   }
 
   /// Remove all files copied in app group directory.
-  /// This is recommended after you send image, files are stored but never deleted.
-  /// You can set force param to remove **ALL** images in app group directory.
+  /// This is recommended after you send files, files are stored but never deleted.
+  /// You can set force param to remove **ALL** files in app group directory.
   Future<void> dispose({bool force = false}) async {
     if (force) {
-      return _appGroupsImageService.removeAllImages();
+      return _appGroupsFileService.removeAllFiles();
     } else {
-      return _appGroupsImageService.removeImagesSession();
+      return _appGroupsFileService.removeFilesSession();
     }
   }
 
@@ -121,4 +152,29 @@ class LiveActivities {
   /// ```
   Stream<ActivityUpdate> get activityUpdateStream =>
       LiveActivitiesPlatform.instance.activityUpdateStream;
+
+  /// A stream of push-to-start tokens for iOS 17.2+ Live Activities.
+  /// This stream emits tokens that can be used to start a Live Activity remotely via push notifications.
+  ///
+  /// When iOS generates or updates a push-to-start token, it will be emitted through this stream.
+  /// You should send this token to your push notification server to enable remote Live Activity creation.
+  ///
+  /// Example usage:
+  /// ```dart
+  /// liveActivities.pushToStartTokenUpdateStream.listen((token) {
+  ///   // Send token to your server
+  ///   print('Received push-to-start token: $token');
+  /// });
+  /// ```
+  ///
+  /// This feature is only available on iOS 17.2 and later. Use [allowsPushStart] to check support.
+  Stream<String> get pushToStartTokenUpdateStream  async* {
+    final allowed = await allowsPushStart();
+
+    if (!allowed) {
+      throw Exception('Push-to-start is not allowed on this device');
+    }
+
+    yield* LiveActivitiesPlatform.instance.pushToStartTokenUpdateStream;
+  }
 }

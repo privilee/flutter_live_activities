@@ -34,20 +34,22 @@ let sharedDefault = UserDefaults(suiteName: "group.dimitridessus.liveactivities"
 struct FootballMatchApp: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: LiveActivitiesAppAttributes.self) { context in
-      let matchName = sharedDefault.string(forKey: "matchName")!
+      let matchName = sharedDefault.string(forKey: context.attributes.prefixedKey("matchName"))!
+      let ruleFile = sharedDefault.string(forKey: context.attributes.prefixedKey("ruleFile"))!
       
-      let teamAName = sharedDefault.string(forKey: "teamAName")!
-      let teamAState = sharedDefault.string(forKey: "teamAState")!
-      let teamAScore = sharedDefault.integer(forKey: "teamAScore")
-      let teamALogo = sharedDefault.string(forKey: "teamALogo")!
+      let teamAName = sharedDefault.string(forKey: context.attributes.prefixedKey("teamAName"))!
+      let teamAState = sharedDefault.string(forKey: context.attributes.prefixedKey("teamAState"))!
+      let teamAScore = sharedDefault.integer(forKey: context.attributes.prefixedKey("teamAScore"))
+      let teamALogo = sharedDefault.string(forKey: context.attributes.prefixedKey("teamALogo"))!
       
-      let teamBName = sharedDefault.string(forKey: "teamBName")!
-      let teamBState = sharedDefault.string(forKey: "teamBState")!
-      let teamBScore = sharedDefault.integer(forKey: "teamBScore")
-      let teamBLogo = sharedDefault.string(forKey: "teamBLogo")!
+      let teamBName = sharedDefault.string(forKey: context.attributes.prefixedKey("teamBName"))!
+      let teamBState = sharedDefault.string(forKey: context.attributes.prefixedKey("teamBState"))!
+      let teamBScore = sharedDefault.integer(forKey: context.attributes.prefixedKey("teamBScore"))
+      let teamBLogo = sharedDefault.string(forKey: context.attributes.prefixedKey("teamBLogo"))!
       
-      let matchStartDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: "matchStartDate") / 1000)
-      let matchEndDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: "matchEndDate") / 1000)
+      let rule = (try? String(contentsOfFile: ruleFile, encoding: .utf8)) ?? ""
+      let matchStartDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: context.attributes.prefixedKey("matchStartDate")) / 1000)
+      let matchEndDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: context.attributes.prefixedKey("matchEndDate")) / 1000)
       let matchRemainingTime = matchStartDate...matchEndDate
       
       ZStack {
@@ -74,7 +76,7 @@ struct FootballMatchApp: Widget {
             .frame(width: 70, height: 120)
             .padding(.bottom, 8)
             .padding(.top, 8)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(.white.opacity(0.4), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
             
             ZStack {
               if let uiImageTeamA = UIImage(contentsOfFile: teamALogo)
@@ -92,19 +94,19 @@ struct FootballMatchApp: Widget {
               Text("\(teamAScore)")
                 .font(.title)
                 .fontWeight(.bold)
-
+              
               Text(":")
                 .font(.title)
                 .fontWeight(.bold)
                 .foregroundStyle(.primary)
-
+              
               Text("\(teamBScore)")
                 .font(.title)
                 .fontWeight(.bold)
             }
             .padding(.horizontal, 5.0)
-            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-
+            .background(.white.opacity(0.4), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            
             HStack(alignment: .center, spacing: 2.0) {
               Text(timerInterval: matchRemainingTime, countsDown: true)
                 .multilineTextAlignment(.center)
@@ -113,7 +115,7 @@ struct FootballMatchApp: Widget {
                 .font(.footnote)
                 .foregroundStyle(.white)
             }
-
+            
             VStack(alignment: .center, spacing: 1.0) {
               Link(destination: URL(string: "la://my.app/stats")!) {
                 Text("See stats 📊")
@@ -121,21 +123,25 @@ struct FootballMatchApp: Widget {
               Text(matchName)
                 .font(.footnote)
                 .foregroundStyle(.white)
+                .padding(.bottom, 5)
+              Text(rule)
+                .font(.footnote)
+                .foregroundStyle(.white.opacity(0.5))
             }
           }
           .padding(.vertical, 6.0)
           
           ZStack {
             VStack(alignment: .center, spacing: 2.0) {
-
+              
               Spacer()
-
+              
               Text(teamBName)
                 .lineLimit(1)
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
-
+              
               Text(teamBState)
                 .lineLimit(1)
                 .font(.footnote)
@@ -145,8 +151,8 @@ struct FootballMatchApp: Widget {
             .frame(width: 70, height: 120)
             .padding(.bottom, 8)
             .padding(.top, 8)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-
+            .background(.white.opacity(0.4), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            
             ZStack {
               if let uiImageTeamB = UIImage(contentsOfFile: teamBLogo)
               {
@@ -161,20 +167,20 @@ struct FootballMatchApp: Widget {
         .padding(.horizontal, 2.0)
       }.frame(height: 160)
     } dynamicIsland: { context in
-      let matchName = sharedDefault.string(forKey: "matchName")!
+      let matchName = sharedDefault.string(forKey: context.attributes.prefixedKey("matchName"))!
       
-      let teamAName = sharedDefault.string(forKey: "teamAName")!
-      let teamAState = sharedDefault.string(forKey: "teamAState")!
-      let teamAScore = sharedDefault.integer(forKey: "teamAScore")
-      let teamALogo = sharedDefault.string(forKey: "teamALogo")!
+      let teamAName = sharedDefault.string(forKey: context.attributes.prefixedKey("teamAName"))!
+      let teamAState = sharedDefault.string(forKey: context.attributes.prefixedKey("teamAState"))!
+      let teamAScore = sharedDefault.integer(forKey: context.attributes.prefixedKey("teamAScore"))
+      let teamALogo = sharedDefault.string(forKey: context.attributes.prefixedKey("teamALogo"))!
       
-      let teamBName = sharedDefault.string(forKey: "teamBName")!
-      let teamBState = sharedDefault.string(forKey: "teamBState")!
-      let teamBScore = sharedDefault.integer(forKey: "teamBScore")
-      let teamBLogo = sharedDefault.string(forKey: "teamBLogo")!
+      let teamBName = sharedDefault.string(forKey: context.attributes.prefixedKey("teamBName"))!
+      let teamBState = sharedDefault.string(forKey: context.attributes.prefixedKey("teamBState"))!
+      let teamBScore = sharedDefault.integer(forKey: context.attributes.prefixedKey("teamBScore"))
+      let teamBLogo = sharedDefault.string(forKey: context.attributes.prefixedKey("teamBLogo"))!
       
-      let matchStartDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: "matchStartDate") / 1000)
-      let matchEndDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: "matchEndDate") / 1000)
+      let matchStartDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: context.attributes.prefixedKey("matchStartDate")) / 1000)
+      let matchEndDate = Date(timeIntervalSince1970: sharedDefault.double(forKey: context.attributes.prefixedKey("matchEndDate")) / 1000)
       let matchRemainingTime = matchStartDate...matchEndDate
       
       return DynamicIsland {
@@ -286,7 +292,7 @@ struct FootballMatchApp: Widget {
           {
             Image(uiImage: uiImageTeamA)
               .resizable()
-              .frame(width: 36, height: 36)
+              .frame(width: 26, height: 26)
           }
           
           Text("\(teamAScore)")
@@ -302,7 +308,7 @@ struct FootballMatchApp: Widget {
           {
             Image(uiImage: uiImageTeamB)
               .resizable()
-              .frame(width: 36, height: 36)
+              .frame(width: 26, height: 26)
           }
         }
       } minimal: {
@@ -311,7 +317,7 @@ struct FootballMatchApp: Widget {
           {
             Image(uiImage: uiImageTeamA)
               .resizable()
-              .frame(width: 37, height: 37)
+              .frame(width: 26, height: 26)
               .offset(x:-6)
           }
           
@@ -319,11 +325,17 @@ struct FootballMatchApp: Widget {
           {
             Image(uiImage: uiImageTeamB)
               .resizable()
-              .frame(width: 37, height: 37)
+              .frame(width: 26, height: 26)
               .offset(x:6)
           }
         }
       }
     }
+  }
+}
+
+extension LiveActivitiesAppAttributes {
+  func prefixedKey(_ key: String) -> String {
+    return "\(id)_\(key)"
   }
 }

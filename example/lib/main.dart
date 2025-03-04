@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:live_activities/live_activities.dart';
-import 'package:live_activities/models/live_activity_image.dart';
+import 'package:live_activities/models/live_activity_file.dart';
 import 'package:live_activities/models/url_scheme_data.dart';
 import 'package:live_activities_example/models/football_game_live_activity_model.dart';
 import 'package:live_activities_example/widgets/score_widget.dart';
@@ -51,8 +51,7 @@ class _HomeState extends State<Home> {
     super.initState();
 
     _liveActivitiesPlugin.init(
-      appGroupId: 'group.dimitridessus.liveactivities',
-    );
+        appGroupId: 'group.dimitridessus.liveactivities', urlScheme: 'la');
 
     _liveActivitiesPlugin.activityUpdateStream.listen((event) {
       print('Activity update: $event');
@@ -95,7 +94,13 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Live Activities (Flutter)'),
+        title: const Text(
+          'Live Activities (Flutter)',
+          style: TextStyle(
+            fontSize: 19,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.green,
       ),
       body: SizedBox.expand(
@@ -150,10 +155,15 @@ class _HomeState extends State<Home> {
                       matchName: 'World cup ⚽️',
                       teamAName: 'PSG',
                       teamAState: 'Home',
-                      teamALogo:
-                          LiveActivityImageFromAsset('assets/images/psg.png'),
-                      teamBLogo: LiveActivityImageFromAsset(
-                          'assets/images/chelsea.png'),
+                      ruleFile:
+                          LiveActivityFileFromAsset('assets/files/rules.txt'),
+                      teamALogo: LiveActivityFileFromAsset.image(
+                        'assets/images/psg.png',
+                      ),
+                      teamBLogo: LiveActivityFileFromAsset.image(
+                          'assets/images/chelsea.png',
+                          imageOptions:
+                              LiveActivityImageFileOptions(resizeFactor: 0.2)),
                       teamBName: 'Chelsea',
                       teamBState: 'Guest',
                       matchStartDate: DateTime.now(),
